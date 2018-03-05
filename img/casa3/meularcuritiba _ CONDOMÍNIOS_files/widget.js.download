@@ -1,0 +1,288 @@
+var domainURL = "https://" +window.location.hostname;
+
+var qs = (function(a) {
+    if (a == "")
+        return {};
+    var b = {};
+    for (var i = 0; i < a.length; ++i){
+        var p = a[i].split('=');
+        if (p.length != 2)
+            continue;
+        b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+    }
+    return b;
+})(window.location.search.substr(1).split('&'));
+
+function isEmpty(obj) {
+    // null and undefined are "empty"
+    if (obj == null)
+        return true;
+
+    // Assume if it has a length property with a non-zero value
+    // that that property is correct.
+    if (obj.length && obj.length > 0)
+        return false;
+    if (obj.length === 0)
+        return true;
+
+    // Otherwise, does it have any properties of its own?
+    // Note that this doesn't handle
+    // toString and toValue enumeration bugs in IE < 9
+    for (var key in obj) {
+        if (hasOwnProperty.call(obj, key))
+            return false;
+    }
+    return true;
+}
+function isMobile(){
+    return Wix.Utils.getDeviceType() == "mobile" ;
+}
+
+function supports_html5_storage() {
+    try {
+        return 'localStorage' in window && window['localStorage'] !== null;
+    } catch (e) {
+        return false;
+    }
+}
+
+function getCounter(mode) {
+    var compId             = Wix.Utils.getCompId();
+    var instanceId         = Wix.Utils.getInstanceId();
+	var widgetId           = instanceId + '--' + compId;
+    var needToIncrement    = 0;
+    
+    if(supports_html5_storage() && !localStorage[compId]) {
+        localStorage.setItem(compId, JSON.stringify(true));
+        needToIncrement = 1;
+    }
+    
+    var url = domainURL + '/en/index/counter/?widgetId=' + widgetId + 
+                                    '&mode=' + mode + 
+                                    '&needToIncrement=' + needToIncrement +
+                                    '&compId=' + compId + 
+                                    '&viewMode=' + Wix.Utils.getViewMode() + 
+                                    '&instance='+instance; 
+    $.get(url, function(data) {
+        
+        $('.wrapper').html(data);
+        $(".wrapper").removeClass('hidden');
+    	console.log("aria-label", $('.counter').attr('aria-label'));
+    	
+    	//$("body").attr('aria-label' , $('.counter').attr('aria-label'));
+        if (mode == 'editor') {
+            var url = domainURL + '/en/settings/loadeditor/?id=' + widgetId + '&instance='+instance;
+    		$.get(url, function(data){
+    			if (isEmpty(data)){
+    				showCounter(dataSettings);
+    			} else {
+    				showCounter(data);
+    			}
+    		});
+        } else {
+    		showCounter(dataSettings);
+    	}
+    		
+    	function showCounter(settings){
+    		var dataSettings     = settings;
+    		var animations       = ['slideExpandUp','fadeIn','slideUp','hatch','rotateIn','bounceIn'];
+    		var spanner          = $('.counter div span');
+    		var spannerClasses   = spanner.attr('class').split(" ");
+    		var temp;
+    		
+    		$.each(animations,function(index, value){
+    			if( $.inArray(value, spannerClasses) !== -1 ) {
+    				spanner.removeClass(value);
+    				temp = (value == 'bounceIn')?'bounce':value;
+    			}
+    		});
+    		
+    		if(isMobile()) {
+                $('.counter .font-family').addClass("font-family-mobile");
+            }
+            
+    		var ds = setInterval(function() {
+    			if(dataSettings && dataSettings.animationMode &&  dataSettings.animationMode.index == 1){
+    				spanner.each(function(index, value) {
+    					var nvm    = $(this);
+    					var timerr = setTimeout(function() {
+    						$('.wrapper #preloader').remove();
+    						nvm.addClass('visible');
+    						nvm.addClass(temp);
+    					}, dataSettings.animationTimeout * index);
+    				});
+    			} else {
+    				$('.wrapper #preloader').remove();
+    				spanner.addClass(temp);
+    				spanner.addClass('visible');
+    			}
+    			
+    			resizeCounter();
+    			$(window).bind('resize', function() { resizeCounter(); });
+    			
+    			clearInterval(ds);
+    		},2200);
+    		
+    		try{
+                Wix.Performance.applicationLoaded();
+            }catch(err){
+                $log.log('Wix.Performance: ', err);
+            }
+    	}
+		
+	}).fail(function(jqXHR, textStatus) {
+	    
+    });
+}
+
+Wix.addEventListener(Wix.Events.COMPONENT_DELETED, function (params) {
+    var compId      = Wix.Utils.getCompId();
+    var instanceId  = Wix.Utils.getInstanceId();
+    var widgetId    = instanceId + '--' + compId;
+            
+    $.get(domainURL + '/en/settings/deleteapp/?id=' + widgetId +
+                                    '&compId=' + compId + 
+                                    '&instance='+instance, function(data) {
+     
+    }).fail(function(jqXHR, textStatus) {
+        console.log(textStatus);
+    });   
+});
+
+Wix.addEventListener(Wix.Events.EDIT_MODE_CHANGE, function(data) {
+    var editMode = data.editMode;
+
+    if(editMode == 'preview') {
+        var widgetId    = Wix.Utils.getInstanceId() + '--' + Wix.Utils.getCompId();
+        var url         = domainURL + '/en/settings/loadeditor/?id=' + widgetId + '&instance='+instance;
+
+        $.get(url, function(data) {
+            if (isEmpty(data)) {
+                //console.log("// data is empty");
+            } else {
+                dataAnimation = data.animation.value * 1;
+                var tempAnim;
+                switch(dataAnimation){
+                    case 0: tempAnim = '';          break;
+                    case 1: tempAnim = 'hatch';     break;
+                    case 2: tempAnim = 'slideUp';   break;
+                    case 3: tempAnim = 'expandUp';  break;
+                    case 4: tempAnim = 'fadeIn';    break;
+                    case 5: tempAnim = 'rotateIn';  break;
+                    case 6: tempAnim = 'bounce';    break;
+                }
+
+                dataAnimationMode       = data.animationMode.index;
+                dataAnimationTimeout    = data.animationTimeout;
+
+                if (dataAnimationMode === 0) {
+                    counterds = $('.counter div span');
+                    counterds.removeClass('visible animated');
+                    counterds.removeClass('bounce hatch slideUp expandUp fadeIn rotateIn');
+                    counterds.addClass(tempAnim);
+                    setTimeout(function(){
+                        counterds.addClass('visible animated');
+                    },100);
+                } else {
+                    counterds = $('.counter div span');
+                    counterds.removeClass('visible animated');
+                    counterds.removeClass('bounce hatch slideUp expandUp fadeIn rotateIn');
+
+                    $('.counter div span').each(function(index, value) {
+                        var ths = $(this);
+                        var timerr = setTimeout(function() {
+                            $('.wrapper #preloader').remove();
+                            ths.addClass('visible animated');
+                            ths.addClass(tempAnim);
+                        }, dataAnimationTimeout * index);
+
+                    });
+                }
+            }
+        });
+    }
+});
+
+function isIOS(){
+    var userAgent   = navigator.userAgent.toLowerCase(),
+        isIPhone    = (userAgent.indexOf("iphone")>= 0),
+        isIPod      = (userAgent.indexOf("ipod")  >= 0),
+        isIPad      = (userAgent.indexOf("ipad")  >= 0);
+    
+    return (isIPhone || isIPod || isIPad); 
+}
+
+function resizeCounter() {
+    var wrapperWidth    = $(window).width();
+    var wrapperHeight   = $(window).height();
+
+    windowHeight = wrapperWidth * 0.2;
+    Wix.setHeight(windowHeight);
+    var isios           = isIOS();
+    
+    //console.log("windowHeight 175: ", windowHeight);
+    var divHeight = (isios ) ?  windowHeight : wrapperHeight ;
+
+    $('.counter div').css('height', divHeight + 'px');
+    $('.counter div.clear').attr('style','width:0px !important;');
+    $('#countdown-3.counter div').css('height', divHeight - 10 + 'px');
+    $('#countdown-3.counter div.clear').attr('style','width:0px !important;');
+    $('#countdown-4.counter div').css('height', divHeight - 8 + 'px');
+
+    var FontPercentage  = (wrapperWidth / 300); /* FONT SIZE CALCULATION */
+    var newFontSize     = Math.floor(25 * FontPercentage) + 1; /* FONT SIZE */
+    
+    
+    for (var i=1; i <= 6; i++) {
+        var id = '#countdown-'+i+'.counter div span';
+        //var height = '-' + Math.floor(wrapperHeight / 2) + 'px'; 
+        //var height = '-' + Math.floor($(id).height() / 2) + 'px'; 
+        var height = '-' + ( isios  ?  Math.floor(wrapperHeight / 2) : Math.floor($(id).height() / 2)) + 'px';
+        $(id).css('margin-top', height);
+    };
+    
+    if (wrapperWidth < '250'){
+        $('#countdown-3.counter div .custom_border').css('top', '0px');
+    }
+}
+
+/***************************************************************************************/
+function publishSettings() {
+    var compId      = Wix.Utils.getCompId();
+    var instanceId  = Wix.Utils.getInstanceId();
+    var widgetId    = instanceId + '--' + compId;
+    var domainURL   = window.location.protocol+"//" +window.location.hostname;
+     
+    $.get(domainURL + '/en/settings/publish/?id=' + widgetId + "&compId=" + compId + '&instance='+instance, function(data) {
+        // callback
+    }).fail(function(jqXHR, textStatus) {
+        
+    });
+}
+
+function initApp(){
+    var viewMode = Wix.Utils.getViewMode() ;
+
+    switch(viewMode) {
+        case 'site'         : 
+        case 'preview'      : getCounter('site'); break;
+        case 'editor'       : getCounter('editor'); break;
+        case 'standalone'   :  
+            setTimeout(function() {
+                $(".wrapper").removeClass('hidden');
+            }, 100);
+            break;
+    }
+}
+
+$(document).ready(function() {
+    Wix.addEventListener(Wix.Events.SITE_PUBLISHED, function(data) {
+        publishSettings();
+    });
+
+    Wix.addEventListener(Wix.Events.SETTINGS_UPDATED, function(params) {
+        getCounter('editor');
+    });
+    
+    initApp();
+});
