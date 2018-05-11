@@ -460,9 +460,9 @@ hr {
 }
 
 .img-whatsapp {
-	max-width: 6%;
-	height: 40px;
-	width: 600px;
+	max-width: 16%;
+	height: 30px;
+	width: 45px;
 }
 
 .img-thumbnail {
@@ -539,8 +539,15 @@ pre code {
 	width: 1000px;
 	padding-right: 15px;
 	padding-left: 15px;
+        padding-top: 5px;
 	margin-right: auto;
 	margin-left: auto
+}
+
+.textarea_finder{
+    border: 1px solid;
+    position: relative;
+    resize: none;
 }
 
 @media ( min-width :576px) {

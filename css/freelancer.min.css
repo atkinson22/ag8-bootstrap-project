@@ -3,7 +3,7 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-	font-weight: 700;
+	font-weight: 600;
 	font-family: Montserrat
 }
 
@@ -161,12 +161,12 @@ section h2 {
 }
 
 header.masthead {
-	padding-top: calc(6rem + 72px);
+	padding-top: calc(6rem + 720px);
 	padding-bottom: 6rem
 }
 
 header.masthead h1 {
-	font-size: 3rem;
+	font-size: 30rem;
 	line-height: 3rem
 }
 
@@ -177,8 +177,8 @@ header.masthead h2 {
 
 @media ( min-width :992px) {
 	header.masthead {
-		padding-top: calc(6rem + 106px);
-		padding-bottom: 6rem
+		padding-top: 150px;
+                padding-bottom: 10px;
 	}
 	header.masthead h1 {
 		font-size: 4.75em;
@@ -190,7 +190,8 @@ header.masthead h2 {
 }
 
 .portfolio {
-	margin-bottom: -15px
+    margin-bottom: -15px;
+    margin-top: -55px;
 }
 
 .portfolio .portfolio-item {
